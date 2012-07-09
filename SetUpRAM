@@ -1,0 +1,9 @@
+; Realm Of Magik Startup Script File
+; For Version 1.2 (Data stored in ram)
+; Run from workbench using ICONX or EXECUTE from the CLI.
+
+:c/echo "Realm Of Magik v1.2 - (c) 1991 Tristan Greaves"
+:c/echo "----------------------------------------------*N"
+:c/echo "Please Wait...Setting up RAM..."
+:c/makedir ram:Data
+

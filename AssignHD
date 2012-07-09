@@ -1,0 +1,8 @@
+; Script file for v1.04
+; Prepares assigns correctly
+
+:c/echo "The Realm Of Magic - Version 1.04"
+:c/echo "---------------------------------"
+:c/echo "Assigning to Hard-Disk ... Please Wait..."
+:c/assign ROM: "HD:ROM"
+

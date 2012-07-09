@@ -1,0 +1,1053 @@
+' REALM OF MAGIK
+' Play By Mail Game Turn Producer version 1.04
+' Programmed by Tristan Greaves
+' (c) 1991 Tristan Greaves
+
+DIM shire$(20),shirecash(20),con1(20),con2(20),con3(20),shirecon(20)
+DIM shiredef(20),shireowner(20),notroops(5,10),skill(5,10),location(5,10)
+DIM mess$(5,40),battle$(5,10),gm$(50),att(5,10),pm$(5,5),troopcash(5,10) 
+DIM aowner$(20),acash(20),anodesc(20),adate$(20,10),adesc$(20,10),acost(20,10)
+
+' Here are the island names
+DATA "Martly",2,3,0     
+DATA "Hackerdom",1,4,0
+DATA "Larthar",1,6,0
+DATA "Bantonia",2,5,17
+DATA "Narnia",4,6,10
+DATA "Oitas",3,5,7
+DATA "Farghoil",6,9,12
+DATA "Khan",9,0,0
+DATA "Montonia",7,8,0
+DATA "Thargoid",5,0,0
+DATA "Ikari",16,17,0
+DATA "Vividan",7,13,14
+DATA "Imaginora",12,15,18
+DATA "Sawert",12,0,0
+DATA "Qwerty",13,0,0
+DATA "Khan II",11,18,0
+DATA "Khan III",4,11,0
+DATA "Amigan",13,16,19
+DATA "Amstradia",18,20,0
+DATA "Denmeadon",19,0,0
+
+START:
+CLS
+PRINT "                             * REALM OF MAGIK *"
+PRINT "              Play By Mail Game Turn Producer [Version 1.04]"
+PRINT "                     Programmed by Tristan Greaves."
+PRINT
+PRINT "            (c) 1991 Tristan Greaves/Vivid Imagination Games."
+star$="*************************************************************************************"
+PRINT star$
+PRINT
+PRINT "                            *****************"
+PRINT "                            *** MAIN MENU ***"
+PRINT "                            *****************"
+PRINT
+PRINT "                      (1)  Start up a new game."
+PRINT "               (2)  View/Change information in a game."
+PRINT "                    (3)  Process a turn in a game."
+PRINT "                    (4)  Exit back to Workbench."
+PRINT:PRINT star$
+PRINT "                [ SELECT OPTION USING NUMBER KEYS ]"
+PRINT star$
+
+getmainmenu:
+a$=INKEY$:IF VAL(a$)<1 OR VAL(a$)>4 THEN GOTO getmainmenu
+ON VAL(a$) GOSUB startup,view,process,quit
+GOTO START
+
+quit:
+CLS:PRINT star$
+PRINT "                       ARE YOU SURE YOU WISH TO QUIT?"
+PRINT star$
+
+getquit:
+a$=INKEY$:IF a$<>"y" AND a$<>"n" THEN GOTO getquit
+IF a$="n" THEN RETURN
+SYSTEM
+
+startup:
+CLS:PRINT star$
+PRINT "                             START A NEW GAME":PRINT star$
+PRINT
+PRINT "Please enter the game number.  Enter 0 to return to main menu:";:INPUT game
+IF game=0 THEN RETURN
+PRINT
+PRINT "A game has a fixed amount of 5 PLAYERS!"
+PRINT "Please enter the information for each player now.  You will have to"
+PRINT "input names, addresses and race names etc."
+PRINT
+PRINT "Please press a key to continue.":GOSUB getakey:GOTO startup2
+
+getakey:
+a$=INKEY$:IF a$="" THEN GOTO getakey
+RETURN
+
+startup2:
+FOR j=1 TO 5
+startup3:
+CLS
+PRINT "Enter information for player";j
+PRINT star$
+PRINT "Player Name:";:INPUT PLAYER$(j)
+PRINT "Address 1:";:INPUT address1$(j)
+PRINT "Address 2:";:INPUT address2$(j)
+PRINT "Address 3:";:INPUT address3$(j)
+PRINT "Address 4:";:INPUT address4$(j)
+PRINT "Address 5:";:INPUT address5$(j)
+PRINT "Telephone:";:INPUT telephone$(j)
+PRINT "Kingdom Name:";:INPUT kingdom$(j)
+PRINT "Account Number:";:INPUT account(j)
+PRINT
+PRINT "Has this been entered correctly?"
+
+enterinfocorrect:
+a$=INKEY$:IF a$<>"n" AND a$<>"y" THEN GOTO enterinfocorrect
+IF a$="n" THEN GOTO startup3
+
+NEXT j:CLS
+PRINT "Here is the basic information for each player:"
+PRINT "Number";TAB(5);"Player Name";TAB(40);"Kingdom Name"
+PRINT star$
+FOR j=1 TO 5:PRINT j;TAB(5);PLAYER$(j);TAB(40);kingdom$(j)
+NEXT j
+PRINT star$
+PRINT
+PRINT "Please wait while the game world is generated......."
+FOR j=1 TO 20:READ shire$(j),con1(j),con2(j),con3(j):NEXT j: ' Read in shire names
+FOR j=1 TO 20:shirecash(j)=INT(RND(1)*5)+1:NEXT j
+
+' New Version 1.2 Random World Routine (Different worlds each game)
+randagain:
+aa=INT(RND(1)*20)+1
+bb=INT(RND(1)*20)+1:IF bb=aa THEN GOTO randagain
+cc=INT(RND(1)*20)+1:IF cc=bb OR cc=aa THEN GOTO randagain
+dd=INT(RND(1)*20)+1:IF dd=cc OR dd=bb OR dd=aa THEN GOTO randagain
+ee=INT(RND(1)*20)+1:IF ee=dd OR ee=cc OR ee=bb OR ee=aa THEN GOTO randagain
+
+' Set up home worlds
+shirecon(aa)=30:shiredef(aa)=10:shirecash(aa)=30:shireowner(aa)=1
+shirecon(bb)=15:shiredef(bb)=30:shirecash(bb)=15:shireowner(bb)=2
+shirecon(cc)=30:shiredef(cc)=10:shirecash(cc)=30:shireowner(cc)=3
+shirecon(dd)=15:shiredef(dd)=30:shirecash(dd)=15:shireowner(dd)=4
+shirecon(ee)=30:shirecon(ee)=10:shirecash(ee)=30:shireowner(ee)=5
+
+' Set up starting armies
+notroops(1,1)=10:skill(1,1)=10:location(1,1)=aa:armysec(1,1)=10
+notroops(2,1)=30:skill(2,1)=20:location(2,1)=bb:armysec(2,1)=10
+notroops(3,1)=10:skill(3,1)=10:location(3,1)=cc:armysec(3,1)=10
+notroops(4,1)=30:skill(4,1)=20:location(4,1)=dd:armysec(4,1)=10
+notroops(5,1)=10:skill(5,1)=10:location(5,1)=ee:armysec(5,1)=10:turn=-1
+
+saveit:
+' Now save out game information
+PRINT "Saving game information......"
+f$="rom:data/"+STR$(game)
+OPEN f$ FOR OUTPUT AS #1
+FOR j=1 TO 5
+WRITE #1,pp(j),PLAYER$(j),address1$(j),address2$(j),address3$(j),address4$(j),address5$(j),telephone$(j),kingdom$(j),account(j)
+FOR x=1 TO 10
+WRITE #1,notroops(j,x),skill(j,x),location(j,x),troopcash(j,x),armysec(j,x):NEXT x:NEXT j
+FOR j=1 TO 20
+WRITE #1,shire$(j),shirecon(j),shiredef(j),shirecash(j),shireowner(j),con1(j),con2(j),con3(j)
+NEXT j:WRITE #1,turn:CLOSE #1
+RETURN
+
+view:
+CLS:PRINT star$
+PRINT "                         VIEW/CHANGE DATA FILE"
+PRINT star$
+PRINT:PRINT "Please enter the game number:";:INPUT game
+f$="ROM:Data/"+STR$(game)
+OPEN f$ FOR INPUT AS #1
+
+FOR j=1 TO 5
+INPUT #1,pp(j),PLAYER$(j),address1$(j),address2$(j),address3$(j),address4$(j),address5$(j),telephone$(j),kingdom$(j),account(j)
+FOR x=1 TO 10
+INPUT #1,notroops(j,x),skill(j,x),location(j,x),troopcash(j,x),armysec(j,x):NEXT x:NEXT j
+FOR j=1 TO 20
+INPUT #1,shire$(j),shirecon(j),shiredef(j),shirecash(j),shireowner(j),con1(j),con2(j),con3(j)
+NEXT j:INPUT #1,turn:CLOSE #1
+
+view2:
+CLS
+PRINT
+PRINT "1: Change player information."
+PRINT "9: Return to the main menu."
+
+getchange:
+a$=INKEY$:IF a$<>"1" AND a$<>"9" THEN GOTO getchange
+IF a$="9" THEN GOSUB saveit:RETURN
+
+viewaddress:
+CLS
+FOR j=1 TO 5:PRINT j,PLAYER$(j):NEXT j
+PRINT:PRINT "Input player number [0 quits]:";:INPUT a:IF a=0 THEN GOTO view2
+CLS
+PRINT "Player Name:";PLAYER$(a)
+PRINT "Address 1:";address1$(a)
+PRINT "Address 2:";address2$(a)
+PRINT "Address 3:";address3$(a)
+PRINT "Address 4:";address4$(a)
+PRINT "Address 5:";address5$(a)
+PRINT "Telephone:";telephone$(a)
+PRINT "Kingdom:";kingdom$(a)
+PRINT "Account:";account(a)
+PRINT
+PRINT "Do you wish to change?"
+
+changeaddress:
+a$=INKEY$:IF a$<>"y" AND a$<>"n" THEN GOTO changeaddress
+IF a$="n" THEN GOTO viewaddress
+
+PRINT "Enter new information:"
+PRINT "Player Name:";:INPUT PLAYER$(a)
+PRINT "Address 1:";:INPUT address1$(a)
+PRINT "Address 2:";:INPUT address2$(a)
+PRINT "Address 3:";:INPUT address3$(a)
+PRINT "Address 4:";:INPUT address4$(a)
+PRINT "Address 5:";:INPUT address5$(a)
+PRINT "Telephone:";:INPUT telephone$(a)
+PRINT "Kingdom:";:INPUT kingdom$(a)
+PRINT "Account:";:INPUT account(a)
+GOTO viewaddress
+
+process:
+CLS:PRINT star$
+PRINT "                             PROCESS A TURN":PRINT star$
+PRINT:PRINT "Please enter game number:";:INPUT game
+PRINT "Please wait...Loading game data..."
+
+f$="ROM:Data/"+STR$(game)
+OPEN f$ FOR INPUT AS #1
+FOR j=1 TO 5
+INPUT #1,pp(j),PLAYER$(j),address1$(j),address2$(j),address3$(j),address4$(j),address5$(j),telephone$(j),kingdom$(j),account(j)
+FOR x=1 TO 10
+INPUT #1,notroops(j,x),skill(j,x),location(j,x),troopcash(j,x),armysec(j,x):NEXT x:NEXT j
+FOR j=1 TO 20
+
+INPUT #1,shire$(j),shirecon(j),shiredef(j),shirecash(j),shireowner(j),con1(j),con2(j),con3(j)
+NEXT j:INPUT #1,turn:CLOSE #1
+
+PRINT "Please wait...Loading account data..."
+
+f$="ROM:Data/ACCOUNTS"
+OPEN f$ FOR INPUT AS #1
+INPUT #1,noacc:FOR j=1 TO noacc:INPUT #1,aowner$(j),acash(j),anodesc(j)
+FOR x=1 TO anodesc(j):INPUT #1,adate$(j,x),adesc$(j,x),acost(j,x):NEXT x
+NEXT j:CLOSE #1
+
+PRINT
+PRINT "Has a GM MESSAGE been prepared and saved as an ASCII file?"
+
+gmprep:
+a$=INKEY$:IF a$<>"y" AND a$<>"n" THEN GOTO gmprep
+IF a$="y" THEN LET gmmessage=1 ELSE LET gmmessage=0
+
+IF gmmessage=0 THEN GOTO aftergm
+
+PRINT "Loading GM MESSAGE ... Please wait."
+
+f$="ROM:Data/GM."+STR$(game)
+gm=0:OPEN f$ FOR INPUT AS #1
+WHILE NOT EOF(1)
+gm=gm+1:INPUT #1,gm$(gm)
+WEND
+CLOSE #1
+
+aftergm:
+PRINT
+a$=DATE$:b$=MID$(a$,4,3):b$=b$+LEFT$(a$,3):b$=b$+MID$(a$,7,4)
+PRINT "Today's date is ";b$:tp$=b$
+PRINT "Enter date for orders to be handed in";:INPUT due$
+PRINT
+PRINT "Enter cost of this turn (£.p)";:INPUT turnprice
+
+
+CLS:PRINT star$
+PRINT "                       STEP 1 - INPUT ORDER INFORMATION"
+PRINT star$
+FOR j=1 TO 5:PRINT
+PRINT "Player:";j;" - Player:";PLAYER$(j);" - Kingdom:";kingdom$(j);" - Account:";account(j)
+PRINT star$
+IF acash(account(j))<0 AND turnprice>0 THEN PRINT "[NOT ENOUGH CASH FOR TURN TO BE PROCESSED]":GOTO step1b
+PRINT:PRINT "Enter orders - [RETURN] on blank line to quit!"
+noorders(j)=0
+inputorder:
+f$="RAM:Data/"
+noorders(j)=noorders(j)+1:IF noorders(j)=21 THEN GOTO step1b
+order$="":INPUT order$
+IF order$="" THEN GOTO step1b
+IF order$="AP" THEN GOTO attack
+IF order$="MR" THEN GOTO build
+IF order$="CI" THEN GOTO capture
+IF order$="IE" THEN GOTO economy
+IF order$="EF" THEN GOTO establish
+IF order$="GA" THEN GOTO givearmy
+IF order$="IF" THEN GOTO increase
+IF order$="JA" THEN GOTO mergearmies
+IF order$="MA" THEN GOTO move
+IF order$="NI" THEN GOTO nameisland
+IF order$="RA" THEN GOTO reinforce
+IF order$="SP" THEN GOTO scoutplayer
+IF order$="TC" THEN GOTO teleport
+IF order$="RC" THEN GOTO unload
+IF order$="SA" THEN GOTO scoutarmy
+IF order$="SI" THEN GOTO scoutisland
+IF order$="RK" THEN GOTO nameempire
+IF order$="GG" THEN GOTO giftgm
+IF order$="TA" THEN GOTO trainarmy
+IF order$="DA" THEN GOTO disbandarmy
+PRINT "       ?? Unknown order!":GOTO nextorder
+
+attack:
+PRINT "Army:";:INPUT a:PRINT "Player:";:INPUT b:noattacks(j)=noattacks(j)+1
+f$=f$+STR$(j)+".A."+STR$(noattacks(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a,b:CLOSE #1:GOTO nextorder
+
+build:
+PRINT "Island:";:INPUT a:PRINT "Troops:";:INPUT b:PRINT "Skill:";:INPUT c
+PRINT "Secruity";:INPUT d
+nobuilds(j)=nobuilds(j)+1:f$=f$+STR$(j)+".B."+STR$(nobuilds(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a,b,c,d:CLOSE #1:GOTO nextorder
+
+capture:
+PRINT "Army:";:INPUT a:nocaptures(j)=nocaptures(j)+1
+f$=f$+STR$(j)+".C."+STR$(nocaptures(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a:CLOSE #1:GOTO nextorder
+
+economy:
+PRINT "Island:";:INPUT a:PRINT "Amount:";:INPUT b:noecons(j)=noecons(j)+1
+f$=f$+STR$(j)+".D."+STR$(noecons(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a,b:CLOSE #1:GOTO nextorder
+
+establish:
+PRINT "Army:";:INPUT a:PRINT "Amount:";:INPUT b:noests(j)=noests(j)+1
+f$=f$+STR$(j)+".E."+STR$(noests(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a,b:CLOSE #1:GOTO nextorder
+
+givearmy:
+PRINT "Army:";:INPUT a:PRINT "Amount:";:INPUT b:nogives(j)=nogives(j)+1
+f$=f$+STR$(j)+".G."+STR$(nogives(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a,b:CLOSE #1:GOTO nextorder
+
+increase:
+PRINT "Island:";:INPUT a:PRINT "Amount:";:INPUT b:noincreases(j)=noincreases(j)+1
+f$=f$+STR$(j)+".I."+STR$(noincreases(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a,b:CLOSE #1:GOTO nextorder
+
+mergearmies:
+PRINT "1st:";:INPUT a:PRINT "2nd:";:INPUT b:nomerges(j)=nomerges(j)+1
+f$=f$+STR$(j)+".J."+STR$(nomerges(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a,b:CLOSE #1:GOTO nextorder
+
+move:
+PRINT "Army:";:INPUT a:PRINT "Destination:";:INPUT b:nomoves(j)=nomoves(j)+1
+f$=f$+STR$(j)+".M."+STR$(nomoves(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a,b:CLOSE #1:GOTO nextorder
+
+nameisland:
+PRINT "Island:";:INPUT a:PRINT "New Name:";:INPUT b$:nonames(j)=nonames(j)+1
+f$=f$+STR$(j)+".N."+STR$(nonames(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a,b$:CLOSE #1:GOTO nextorder
+
+reinforce:
+PRINT "Army:";:INPUT a:PRINT "Troops:";:INPUT b:norein(j)=norein(j)+1
+f$=f$+STR$(j)+".R."+STR$(norein(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a,b:CLOSE #1:GOTO nextorder
+
+scoutplayer:
+IF noscpl(j)=1 THEN GOTO nextorder
+PRINT "Player:";:INPUT a:noscpl(j)=noscpl(j)+1
+f$=f$+STR$(j)+".S."+STR$(noscpl(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a:CLOSE #1:GOTO nextorder
+
+teleport:
+PRINT "Amount:";:INPUT a:PRINT "From:";:INPUT b:PRINT "To:";:INPUT c:notels(j)=notels(j)+1
+f$=f$+STR$(j)+".T."+STR$(notels(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a,b,c:CLOSE #1:GOTO nextorder
+
+unload:
+PRINT "Army:";:INPUT a:PRINT "Amount:";:INPUT b:nouns(j)=nouns(j)+1
+f$=f$+STR$(j)+".U."+STR$(nouns(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a,b:CLOSE #1:GOTO nextorder
+
+scoutarmy:
+IF noscar(j)=5 THEN GOTO nextorder
+PRINT "Player:";:INPUT a:PRINT "Army:";:INPUT b:noscar(j)=noscar(j)+1
+f$=f$+STR$(j)+".X."+STR$(noscar(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a,b:CLOSE #1:GOTO nextorder
+
+scoutisland:
+' IF noscis(j)=1 THEN GOTO nextorder
+PRINT "Island:";:INPUT a:noscis(j)=noscis(j)+1
+f$=f$+STR$(j)+".SI."+STR$(noscis(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a:CLOSE #1:GOTO nextorder
+
+nameempire:
+PRINT "Name:";:INPUT a$:noname(j)=noname(j)+1
+f$=f$+STR$(j)+".Z."+STR$(noname(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a$:CLOSE #1:GOTO nextorder
+
+trainarmy:
+PRINT "Army Number:";:INPUT a:PRINT "Skill Upgrade:";:INPUT b
+notrain(j)=notrain(j)+1
+f$=f$+STR$(j)+".TA."+STR$(notrain(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a,b:CLOSE #1:GOTO nextorder
+
+disbandarmy:
+PRINT "Army Number:";:INPUT a:nodisband(j)=nodisband(j)+1
+f$=f$+STR$(j)+".DA."+STR$(notrain(j))
+OPEN f$ FOR OUTPUT AS #1:WRITE #1,a:CLOSE #1:GOTO nextorder
+
+nextorder:
+GOTO inputorder
+
+step1b:
+PRINT:PRINT "MESSAGE: Send to: (0 = No message, 6 = To all)";:INPUT me
+IF me=0 THEN GOTO step1c
+PRINT "Enter Text of Message below:":INPUT me$
+IF me=6 THEN GOTO toall
+
+nopm(me)=nopm(me)+1:pm$(me,nopm(me))=me$:GOTO step1c
+
+toall:
+FOR x=1 TO 5
+nopm(x)=nopm(x)+1:pm$(x,nopm(x))=me$:NEXT x
+
+step1c:
+NEXT j
+
+CLS:star$=LEFT$(star$,40)
+PRINT star$
+PRINT "                       PROCESSING TURN";turn+1;"NOW!"
+turn=turn+1:PRINT star$:PRINT
+PRINT "1 - Input orders/Accounts";TAB(40);"... DONE !!"   
+PRINT "2 - Remove dead armies";TAB(40);"... ";            
+FOR j=1 TO 5:FOR x=1 TO 10
+IF notroops(j,x)=-1 THEN LET notroops(j,x)=0:troopcash(j,x)=0:location(j,x)=0
+NEXT x:NEXT j:PRINT "DONE !!"
+PRINT "3 - Kingdom/Planet Naming";TAB(40);"... ";     
+FOR j=1 TO 5:IF noname(j)=0 THEN GOTO next1
+FOR x=1 TO noname(j)
+f$="RAM:data/":f$=f$+STR$(j)+".Z."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a$:CLOSE #1
+a$=LEFT$(a$,15):kingdom$(j)=a$:NEXT x
+next1:
+NEXT j
+step3b:
+FOR j=1 TO 5:IF nonames(j)=0 THEN GOTO next2
+FOR x=1 TO nonames(j)
+f$="RAM:data/":f$=f$+STR$(j)+".N."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a,b$:CLOSE #1
+IF shireowner(a)<>j THEN z$=shire$(a)+" is not owned by you, so unfortunately it could not be renamed.":GOTO name2
+b$=LEFT$(b$,15):shire$(a)=b$
+z=INT(RND(1)*3)+1
+IF z=1 THEN z$="Island number"+STR$(a)+" was successfully renamed as "+b$
+IF z=2 THEN z$="The populace of island"+STR$(a)+" did not object to their island being renamed as "+b$
+IF z=3 THEN z$="The leader of island"+STR$(a)+" announced to his people that the island had been renamed as "+b$
+name2:
+nomess(j)=nomess(j)+1:mess$(j,nomess(j))=z$
+NEXT x
+next2:
+NEXT j:PRINT "DONE !!"
+PRINT "4 - Fleet/Base Combat";TAB(40);"... ";         
+step4:
+FOR j=1 TO 5:IF noattacks(j)=0 THEN GOTO next3
+FOR x=1 TO noattacks(j)
+f$="RAM:data/":f$=f$+STR$(j)+".A."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a,b:CLOSE #1
+IF notroops(j,a)<=0 THEN z$="Army number"+STR$(a)+" could not be given attack orders, as it does not exist.":GOTO combat2
+IF b=j THEN z$="Army number"+STR$(a)+" was somewhat confused when you gave it orders to attack themselves!":GOTO combat2
+IF b<1 OR b>5 THEN z$="Army number"+STR$(a)+" has never heard of the enemy you requested them to attack!":GOTO combat2
+IF skill(j,a)=0 THEN z$="Scout group number"+STR$(a)+" did not attack, as they have no battle training.":GOTO combat2
+
+' Fleet to fleet combat
+' 3/1/91 - Bug reported: It is impossible to attack an enemy island as
+' the searching algorithm is bugged.  Argh!  Fleetloop routine is
+' pointless as it is repeated in the Fleetofleet2 section.  Let's get
+' to work......[So much for the holidays......]
+
+' Fleetloop deleted - Not needed!
+
+fleetofleet2:
+' A few changes here...It will help if we find out if the enemy army
+' exists BEFORE checking to see if it has been attacked!  (This involves
+' swapping two groups of lines).
+
+' By the way...We go backwards from 10 because in the rules it states
+' that the LOWEST enemy army will be attacked.
+
+here=0:FOR z=10 TO 1 STEP -1:IF location(b,z)=location(j,a) THEN here=z
+NEXT z:IF here=0 THEN GOTO basecombat    ' A-ha!
+
+y=here    ' This is needed.
+IF att(j,a)=1 OR att(b,y)=1 THEN z$="Details of Army number"+STR$(a)+"'s battle can be fount in the BATTLE REPORT section.":GOTO combat3
+att(j,a)=1:att(b,y)=1
+
+' Next comes the combat calculations...As far as I know these work so
+' I'll leave them alone (For the moment!)
+' Calculate damage inflicted on enemy fleet
+damage=0
+damage=damage+skill(j,a)+INT(RND(1)*5)+1
+IF damage>notroops(b,y) THEN LET damage=notroops(b,y)
+notroops(b,y)=notroops(b,y)-damage:IF notroops(b,y)<=0 THEN LET notroops(b,y)=-1
+' The enemy troops strike back
+damage2=0
+damage2=damage2+skill(b,y)+INT(RND(1)*5)+1
+IF damage2>notroops(j,a) THEN LET damage2=notroops(j,a)
+notroops(j,a)=notroops(j,a)-damage2:IF notroops(j,a)<=0 THEN LET notroops(j,a)=-1:GOTO fleetofleet3
+fleetofleet3:
+z$="Army number"+STR$(a)+"'s attack on player"+STR$(b)+" inflicted a total of"+STR$(damage)+" casualties.  You lost"+STR$(damage2)+" men."
+x$="Army"+STR$(y)+" was attacked by player"+STR$(j)+"! Your army suffered"+STR$(damage)+" casualties. You inflicted"+STR$(damage2)+" casualties"
+pp(j)=pp(j)+damage:pp(b)=pp(b)+damage2:GOTO combat2
+
+' Hmmm.  Those combat routines seem a bit unfair at some points and
+' extremely unrealistic.  A later project, perhaps?
+
+' Now onto basecombat.  This HAS NEVER BEEN TESTED BEFORE!!  Let's
+' have a look...
+
+
+basecombat:
+y=location(j,a)   ' y = Island to be attacked.
+IF shireowner(y)<>b THEN z$="Army number"+STR$(a)+" could find no trace of the enemy you instructed them to attack.":GOTO combat2
+IF shiredef(y)=0 THEN z$="Army number"+STR$(a)+" reported that there were no defences at their current location.":GOTO combat2
+
+' Damage calculations....Unrealistic!  I hate 'em!
+damage=0:damage=damage+skill(j,a)+INT(RND(1)*5)+1
+IF damage>shiredef(y) THEN LET damage=shiredef(y)
+shiredef(y)=shiredef(y)-damage:IF shiredef(y)=0 THEN GOTO basecombat2
+damage2=0:damage2=damage2+shiredef(y)*2+INT(RND(1)*5)+1
+IF damage2>notroops(j,a) THEN LET damage2=notroops(j,a)
+notroops(j,a)=notroops(j,a)-damage2:IF notroops(j,a)=0 THEN LET notroops(j,a)=-1:GOTO basecombat2
+basecombat2:
+z$="Army number"+STR$(a)+" inflicted"+STR$(damage)+" casualties to the enemy defences. The enemy inflicted "+STR$(damage2)+" casualties."
+x$="Island "+STR$(y)+" was attacked by player "+STR$(j)+".  The defences at that island lost "+STR$(damage)+" men.  They inflicted "+STR$(damage2)+" casualties."
+pp(j)=pp(j)+damage:pp(b)=pp(b)+damage2:GOTO combat2
+combat2:
+battle(b)=battle(b)+1:battle$(b,battle(b))=x$
+combat3:
+nomess(j)=nomess(j)+1:mess$(j,nomess(j))=z$
+NEXT x
+
+' Wow!  Those routines seem okay(!).  I'll have to wait until next turn
+' to test them.  See you then!  (Twilight zone music......)
+
+next3:
+NEXT j:PRINT "DONE !!"
+step5:
+PRINT "5 - Capture Islands";TAB(40);"... ";
+FOR j=1 TO 5:IF nocaptures(j)=0 THEN GOTO next4
+FOR x=1 TO nocaptures(j)
+f$="RAM:data/":f$=f$+STR$(j)+".C."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a:CLOSE #1:y=location(j,a)
+IF notroops(j,a)<=0 THEN z$="A servant of yours told you that army number"+STR$(a)+" does not exist, and could not capture any islands.":GOTO capture2
+IF shireowner(y)=j THEN z$="Army number"+STR$(a)+" reported their confusion at being ordered to capture an island that belongs to you already!":GOTO capture2
+IF shiredef(y)>0 THEN z$="Army number"+STR$(a)+" did not capture the island they are located at, due to the enemy defences present.":GOTO capture2
+IF shireowner(y)<>0 THEN GOTO alreadyowned
+shireowner(y)=j
+z=INT(RND(1)*3)+1
+IF z=1 THEN z$="Army number"+STR$(a)+" reported no problems in capturing island number"+STR$(y):GOTO capture2
+IF z=2 THEN z$="Army number"+STR$(a)+" has successfully managed to capture island number"+STR$(y):GOTO capture2 
+IF z=3 THEN z$="It has been reported that army number"+STR$(a)+" succeeded in capturing island number"+STR$(y):GOTO capture2
+alreadyowned:
+z=shireowner(y):shireowner(y)=j
+z$="Army "+STR$(a)+" captured island number "+STR$(y)+" from player"+STR$(z)+" with no problems!"
+x$="Tragically, island number "+STR$(y)+" has fallen - With player"+STR$(j)+" capturing it."
+battle(z)=battle(z)+1:battle$(z,battle(z))=x$
+capture2:
+nomess(j)=nomess(j)+1:mess$(j,nomess(j))=z$
+NEXT x
+next4:
+NEXT j:PRINT "DONE !!"
+step6:
+PRINT "6 - Give cash/Teleport cash";TAB(40);"... ";
+FOR j=1 TO 5:IF nogives(j)=0 THEN GOTO next5
+FOR x=1 TO nogives(j)
+f$="RAM:data/":f$=f$+STR$(j)+".G."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a,b:CLOSE #1
+y=location(j,a)
+IF y<=0 THEN z$="Army number"+STR$(a)+" received no cash due to it not existing.":GOTO give2
+IF shireowner(y)<>j THEN z$="Army number"+STR$(a)+" received no cash from the enemy island!":GOTO give2
+IF shirecash(y)<b THEN z$="Island"+STR$(y)+" did not hold enough cash to fund army number"+STR$(a)+"'s requirement.":GOTO give2
+IF armysec(j,a)<b THEN z$="Army number"+STR$(a)+" did not have sufficient secruity to handle the sum of"+STR$(b)+" cash.":GOTO give2
+troopcash(j,a)=troopcash(j,a)+b:shirecash(y)=shirecash(y)-b
+z=INT(RND(1)*3)+1
+IF z=1 THEN z$="Army number"+STR$(a)+" was given"+STR$(b)+" cash from island number"+STR$(y):GOTO give2
+IF z=2 THEN z$="The leader of island number"+STR$(y)+" reported that the sum of"+STR$(b)+" cash was handed over to army number"+STR$(a)+"."
+IF z=3 THEN z$=STR$(b)+" cash was taken from island number"+STR$(y)+"'s treasury and given to army number"+STR$(a)
+give2:
+nomess(j)=nomess(j)+1:mess$(j,nomess(j))=z$
+NEXT x
+
+next5:
+NEXT j
+step6b:
+FOR j=1 TO 5:IF notels(j)=0 THEN next6
+FOR x=1 TO notels(j)
+f$="RAM:data/":f$=f$+STR$(j)+".T."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a,b,c:CLOSE #1
+y=b:yy=c
+IF shireowner(y)<>j THEN z$="You could not teleport cash from island "+STR$(y)+" as it is currently enemy controlled.":GOTO tel2
+IF shirecash(y)<a THEN z$="There was not enough cash on island "+STR$(y)+" to satisfy your teleporting demands.":GOTO tel2
+IF shirecon(y)<15 OR shirecon(yy)<15 THEN z$="No cash was teleported from island"+STR$(y)+" to island"+STR$(yy)+" as they require an economy of 15.":GOTO tel2
+shirecash(y)=shirecash(y)-a:shirecash(yy)=shirecash(yy)+a
+z=INT(RND(1)*3)+1
+IF z=1 THEN z$="You teleported"+STR$(a)+" cash from island"+STR$(b)+" to island"+STR$(c)
+IF z=2 THEN z$="The sum of"+STR$(a)+" cash was teleported from island"+STR$(b)+" to island"+STR$(c)+" with no trouble."
+IF z=3 THEN z$="The Wizards informed you that they teleported"+STR$(a)+" cash from island"+STR$(b)+" to island"+STR$(c)+" without difficulty."
+IF shireowner(yy)<>j THEN w=shireowner(yy):battle(w)=battle(w)+1:battle$(w,battle(w))="A gift of"+STR$(a)+" cash was donated by player"+STR$(j)+" to island number"+STR$(c)+" via teleportation."
+tel2:
+nomess(j)=nomess(j)+1:mess$(j,nomess(j))=z$
+NEXT x
+next6:
+NEXT j:PRINT "DONE !!"
+
+step7:
+PRINT "8 - Move armys/Unload cash";TAB(40);"... ";
+FOR j=1 TO 5:IF nomoves(j)=0 THEN GOTO next7
+FOR x=1 TO nomoves(j)
+f$="RAM:data/":f$=f$+STR$(j)+".M."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a,b:CLOSE #1:KILL f$
+y=location(j,a)
+IF notroops(j,a)=0 THEN z$="The movement of army number"+STR$(a)+" failed, as no record of it could be found!":GOTO move2
+IF b<1 OR b>20 THEN z$="Army number"+STR$(a)+" reported that it could not move to the island you specified, as it does not exist.":GOTO move2
+IF con1(y)<>b AND con2(y)<>b AND con3(y)<>b THEN z$="Army number"+STR$(a)+" reported that no direct route linked it to the destination you specified.":GOTO move2
+location(j,a)=b
+z=INT(RND(1)*3)+1
+IF z=1 THEN z$="Army"+STR$(a)+" sailed from island"+STR$(y)+" to island"+STR$(b)
+IF z=2 THEN z$="Despite some stormy weather, army number"+STR$(a)+" reported no problems in sailing from island"+STR$(y)+" to island"+STR$(b)
+IF z=3 THEN z$="A message from Army"+STR$(a)+" said that they sailed from island"+STR$(y)+" to island"+STR$(b)
+move2:
+nomess(j)=nomess(j)+1:mess$(j,nomess(j))=z$
+NEXT x
+next7:
+NEXT j
+step7b:
+FOR j=1 TO 5:IF nouns(j)=0 THEN GOTO next8
+FOR x=1 TO nouns(j)
+f$="RAM:data/":f$=f$+STR$(j)+".U."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a,b:CLOSE #1
+y=location(j,a)
+IF notroops(j,a)=0 THEN z$="No cash was unloaded from island"+STR$(y)+" by the army you specified, as the army does not exist!":GOTO unload2
+IF shireowner(y)<>j THEN z$="Army number"+STR$(a)+" refused outright to unload precious cash onto an enemy island.":GOTO unload2
+IF troopcash(j,a)<b THEN z$="There was not enough cash carried by army number"+STR$(a)+" to carry out your unloading requirement.":GOTO unload2
+troopcash(j,a)=troopcash(j,a)-b:shirecash(y)=shirecash(y)+b
+z=INT(RND(1)*3)+1
+IF z=1 THEN z$="Army"+STR$(a)+" unloaded"+STR$(b)+" cash onto island number "+STR$(y)
+IF z=2 THEN z$="The treasury of island"+STR$(y)+" was increased by"+STR$(b)+" cash when army number"+STR$(a)+" donated to it."
+IF z=3 THEN z$="The elders of island"+STR$(y)+" were pleased to report that army"+STR$(a)+" had no problems in unloading the sum of"+STR$(b)+" cash."
+unload2:
+nomess(j)=nomess(j)+1:mess$(j,nomess(j))=z$
+NEXT x
+next8:
+NEXT j:PRINT "DONE !!"
+step8:
+PRINT "8 - Establish/Increase islands";TAB(40);"... ";
+FOR j=1 TO 5:IF noests(j)=0 THEN GOTO next9
+FOR x=1 TO noests(j)
+f$="RAM:data/":f$=f$+STR$(j)+".E."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a,b:CLOSE #1
+y=location(j,a)
+IF notroops(j,a)<=0 THEN z$="An exhausted runner reported that he could not find army"+STR$(a)+" to instruct them to establish some fortifications.":GOTO est2
+IF shireowner(y)<>j THEN z$="The enemy refused to let army number"+STR$(a)+" to establish some fortifications on island"+STR$(y)+"!":GOTO est2
+IF b<5 THEN z$="Army number"+STR$(a)+" reported that at least 5 cash should be spent to establish some fortifications.":GOTO est2
+IF troopcash(j,a)<b THEN z$="Army"+STR$(a)+" did not have enough cash to establish the fort you required.":GOTO est2
+IF shiredef(y)>0 THEN z$="Island"+STR$(y)+" already has a fort, so does not require one to be established.":GOTO est2
+troopcash(j,a)=troopcash(j,a)-b:shiredef(y)=1:shiredef(y)=shiredef(y)+(b-5)
+z$="Army"+STR$(a)+" established a fort on island"+STR$(y)+" with"+STR$(b)+" cash."
+est2:
+nomess(j)=nomess(j)+1:mess$(j,nomess(j))=z$
+NEXT x
+next9:
+NEXT j
+FOR j=1 TO 5:IF noincreases(j)=0 THEN GOTO next10
+FOR x=1 TO noincreases(j)
+f$="RAM:data/":f$=f$+STR$(j)+".I."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a,b:CLOSE #1
+IF shireowner(a)<>j THEN z$="Island number"+STR$(a)+" is not under your contro, so the fortifications could not be increased.":GOTO inc2
+IF shiredef(a)=0 THEN z$="Island "+STR$(a)+" does not have any fortifications to increase!  Some should be established first.":GOTO inc2
+IF shiredef(a)=100 THEN z$="The fort on Island "+STR$(a)+" have already reached perfection, so do not require any more work.":GOTO inc2
+IF shirecash(a)<b THEN z$="Island "+STR$(a)+" did not have enough funds to support the increase in fortifications that you ordered.":GOTO inc2
+shiredef(a)=shiredef(a)+INT(b/3):shirecash(a)=shirecash(a)-b
+IF shiredef(a)>100 THEN LET shiredef(a)=100
+z=INT(RND(1)*3)+1
+IF z=1 THEN z$="The fortifications on Island"+STR$(a)+" were increased by"+STR$(INT(b/3))+" men."
+IF z=2 THEN z$="The fortifications on Island"+STR$(a)+" swelled in size, being increased by"+STR$(INT(b/3))+" men."
+IF z=3 THEN z$="Some new men were shipped to Island"+STR$(a)+" to increase its fortifications.  "+STR$(INT(b/3))+" men were sent."
+inc2:
+nomess(j)=nomess(j)+1:mess$(j,nomess(j))=z$
+NEXT x
+next10:
+NEXT j:PRINT "DONE !!"
+step9:
+PRINT "9 - Build Up Economy";TAB(40);"... ";
+FOR j=1 TO 5:IF noecons(j)=0 THEN GOTO next11
+FOR x=1 TO noecons(j)
+f$="RAM:data/":f$=f$+STR$(j)+".D."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a,b:CLOSE #1
+IF shireowner(a)<>j THEN z$="The enemy did not allow you to fiddle with island number"+STR$(a)+"'s economy!":GOTO buildup2
+IF shirecon(a)=50 THEN z$="The treasury of island number"+STR$(a)+" reported that it did not need supporting in any way.":GOTO buildup2
+IF shirecash(a)<b THEN z$="Island"+STR$(a)+" did not have enough funds to build up it's economy with the amount you specified.":GOTO buildup2
+shirecon(a)=shirecon(a)+INT(b/3):shirecash(a)=shirecash(a)-b
+IF shirecon(a)>50 THEN LET shirecon(a)=50
+z=INT(RND(1)*3)+1
+IF z=1 THEN z$="The economy on Island"+STR$(a)+" was boosted by"+STR$(INT(b/3))+" points."
+IF z=2 THEN z$="The mayor of island"+STR$(a)+" was happy to tell you that the economy of his island has risen by"+STR$(INT(b/3))+" points!"
+IF z=3 THEN z$="The money you invested on Island"+STR$(a)+" was put to good use, as its economy rose by"+STR$(INT(b/3))+" points!"
+buildup2:
+nomess(j)=nomess(j)+1:mess$(j,nomess(j))=z$
+NEXT x
+next11:
+NEXT j:PRINT "DONE !!"
+step10:
+PRINT "10 - Build new armys";TAB(40);"... ";
+FOR j=1 TO 5:IF nobuilds(j)=0 THEN GOTO next12
+FOR x=1 TO nobuilds(j)
+f$="RAM:data/":f$=f$+STR$(j)+".B."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a,b,c,d:CLOSE #1
+IF notroops(j,10)>0 THEN z$="The grand King of your Kingdom has refused to let you muster any more armies.":GOTO build2
+IF shireowner(a)<>j THEN z$="The enemy laughed when you tried to create an army at island number"+STR$(a)+", as it is owned by him!":GOTO build2
+cost=b+(2*c)+(2*d)
+IF shirecash(a)<cost THEN z$="Island"+STR$(a)+" did not have the resources to muster an army.  Lack of cash was blamed.":GOTO build2
+space=0:FOR y=10 TO 1 STEP -1:IF notroops(j,y)=0 THEN space=y
+NEXT y:IF space=0 THEN z$="The grand King of your Kingdom could not allow you to muster ANOTHER army!":GOTO build2
+notroops(j,space)=b:skill(j,space)=c:shirecash(a)=shirecash(a)-cost
+location(j,space)=a:armysec(j,space)=d
+z=INT(RND(1)*3)+1
+IF z=1 THEN z$="An army was built at island"+STR$(a)+" costing"+STR$(cost)+" cash.  Army number"+STR$(space)
+IF z=2 THEN z$="Island"+STR$(a)+" reports that an army was created there, which cost"+STR$(cost)+" cash.  The army was given the number"+STR$(space)+"."
+IF z=3 THEN z$="Army number"+STR$(space)+" has been created at island number"+STR$(a)+" and is ready for action.  This action cost"+STR$(cost)+" cash."
+build2:
+nomess(j)=nomess(j)+1:mess$(j,nomess(j))=z$
+NEXT x
+next12:
+NEXT j:PRINT "DONE !!"
+step11:
+PRINT "11 - Reinforce armies/Merge armies";TAB(40);"... ";
+FOR j=1 TO 5:IF norein(j)=0 THEN GOTO next13
+FOR x=1 TO norein(j)
+f$="RAM:data/":f$=f$+STR$(j)+".R."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a,b:CLOSE #1
+y=location(j,a)
+IF notroops(j,a)<=0 THEN z$="No reinforcements could be given to army number"+STR$(a)+" as it does not exist.":GOTO rein2
+IF shireowner(y)<>j THEN z$="Army number"+STR$(a)+" did not find any men to reinforce it at island number"+STR$(y)+", as it is controlled by the enemy!":GOTO rein2
+IF shirecash(y)<b THEN z$="There is not enough cash on the island to reinforce army"+STR$(a)+" by the number of men you specified.":GOTO rein2
+shirecash(y)=shirecash(y)-b:notroops(j,a)=notroops(j,a)+b
+z$="Army number"+STR$(a)+" welcomed its new troops with open arms. "+STR$(b)+" Troops were sent."
+rein2:
+nomess(j)=nomess(j)+1:mess$(j,nomess(j))=z$
+NEXT x
+next13:
+NEXT j
+FOR j=1 TO 5:IF nomerges(j)=0 THEN GOTO next14
+FOR x=1 TO nomerges(j)
+f$="RAM:data/":f$=f$+STR$(j)+".J."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a,b:CLOSE #1
+y=location(j,a):yy=location(j,b)
+IF notroops(j,a)<=0 OR notroops(j,b)<=0 THEN z$="You were reminded politely that to merge two armies together, they must both exist!":GOTO merge2
+IF y<>yy THEN z$="Armies"+STR$(a)+" and"+STR$(b)+" could not be merged as they are not located at the same island!":GOTO merge2
+notroops(j,a)=notroops(j,a)+notroops(j,b):notroops(j,b)=0
+skill(j,a)=skill(j,a)+skill(j,b):skill(j,b)=0
+troopcash(j,a)=troopcash(j,a)+troopcash(j,b):troopcash(j,b)=0
+armysec(j,a)=armysec(j,a)+armysec(j,b):armysec(j,b)=0
+z$="Armies "+STR$(a)+" and "+STR$(b)+" were merged together with no problems.  The new army has the number"+STR$(a)+"."
+merge2:
+nomess(j)=nomess(j)+1:mess$(j,nomess(j))=z$
+NEXT x
+next14:
+NEXT j:PRINT "DONE !!"
+
+
+PRINT "11a- Train armies";TAB(40);"... ";
+FOR j=1 TO 5:IF notrain(j)=0 THEN GOTO next11a2
+FOR x=1 TO notrain(j)
+f$="RAM:data/":f$=f$+STR$(j)+".TA."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a,b:CLOSE #1
+IF a<1 OR a>10 OR notroops(j,a)<=0 THEN z$="The Chief Commander of training politely pointed out that it was impossible to train an army which didn't exist.":GOTO next11a1
+IF shireowner(location(j,a))<>j THEN z$="Army number"+STR$(a)+" could not be trained in the art of warfare while present at an enemy island !!":GOTO next11a1
+IF shirecash(location(j,a))<2*b THEN z$="The assistant to the treasurer personally reported that there was not enough cash to support the training of army number"+STR$(a)+".":GOTO next11a1
+shirecash(location(j,a))=shirecash(location(j,a))-2*b
+skill(j,a)=skill(j,a)+b
+z=INT(RND(1)*3)+1
+IF z=1 THEN z$="After much hard labour the soldiers of army number"+STR$(a)+" were made more proficient in the art of combat.  Their skill rose by"+STR$(b)+" points.":GOTO next11a1
+IF z=2 THEN z$="It seemed army number"+STR$(a)+" enjoyed their combat training as it was overseen by quite a jolly trainer.  There was still much hard work which rose their skill by"+STR$(b)+" points.":GOTO next11a1
+IF z=3 THEN z$="Despite moaning a little army number"+STR$(a)+" agreed to undertake battle training.  In the end they admitted to quite enjoying it!  This was reflected by their new skill - "+STR$(b)+" points larger than before!":GOTO next11a1
+next11a1:
+nomess(j)=nomess(j)+1:mess$(j,nomess(j))=z$
+NEXT x
+next11a2:
+NEXT j:PRINT "DONE !!"
+PRINT "11b- Disband armies";TAB(40);"... ";
+FOR j=1 TO 5:IF nodisband(j)=0 THEN GOTO next11b2
+FOR x=1 TO nodisband(j)
+f$="RAM:data/":f$=f$+STR$(j)+".DA."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a:CLOSE #1
+IF a<1 OR a>10 OR notroops(j,a)<=0 THEN z$="You were informed that your attempt to disband army number"+STR$(a)+" had failed.  The reason?  The army did not exist !":GOTO next11b1
+notroops(j,a)=0
+z$="The troops of army number"+STR$(a)+" rejoiced when informed they were no longer needed!!  They returned to their home town without incident.  If the army had some cash it was shared out between them.":GOTO next11b1
+next11b1:
+nomess(j)=nomess(j)+1:mess$(j,nomess(j))=z$
+NEXT x
+next11b2:
+NEXT j:PRINT "DONE !!
+PRINT "12 - Scout enemy armies/islands";TAB(40);"... ";
+FOR j=1 TO 5:IF noscar(j)=0 THEN GOTO next16
+FOR x=1 TO noscar(j)
+f$="RAM:data/":f$=f$+STR$(j)+".X."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a,b:CLOSE #1:KILL f$
+IF a<1 OR a>5 THEN z$="Your order to scout player"+STR$(a)+" failed when it was found out that such a player did not exist.":GOTO next15
+IF a=j THEN z$="An assistance of yours pointed out that there was no point in sending a scout to investigate your own armies.":GOTO next15
+IF b<1 OR b>10 OR notroops(a,b)<=0 THEN z$="The scout sent to investigate army"+STR$(b)+" of player"+STR$(a)+" returned to tell you that no such army existed.":GOTO next15
+z$="The scout sent to investigate army"+STR$(b)+" of player"+STR$(a)+" reported that it contains"+STR$(notroops(a,b))+" troops with a skill of"+STR$(skill(a,b))+" and is at island number"+STR$(location(a,b))+"."
+next15:
+nomess(j)=nomess(j)+1:mess$(j,nomess(j))=z$
+NEXT x
+next16:
+NEXT j
+FOR j=1 TO 5:IF noscis(j)=0 THEN GOTO next180
+FOR x=1 TO noscis(j)
+f$="RAM:data/":f$=f$+STR$(j)+".SI."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a:CLOSE #1:KILL f$
+IF a<1 OR a>20 THEN z$="The Chief of the Map-Makers Guild informed you that island number"+STR$(a)+" did not exist, and could not be scouted.":GOTO next170
+xy$=STR$(con1(a))+" "+STR$(con2(a))+" "+STR$(con3(a))
+z$="A report was compiled on island number"+STR$(a)+" and runs as follows ... NAME:"+shire$(a)+" - FORT:"+STR$(shiredef(a))+" - ECONOMY:"+STR$(shirecon(a))+" - OWNER:"+STR$(shireowner(a))+" - SEA LANES:"+xy$+".":GOTO next170
+next170:
+nomess(j)=nomess(j)+1:mess$(j,nomess(j))=z$
+NEXT x
+next180:
+NEXT j:PRINT "DONE !!"
+PRINT "13 - Gifts to the GM";TAB(40);"... ";
+FOR j=1 TO 5:IF nogift(j)=0 THEN GOTO next18
+FOR x=1 TO nogift(j)
+f$="RAM:data/":f$=f$+STR$(j)+".GG."+STR$(x)
+OPEN f$ FOR INPUT AS #1:INPUT #1,a:CLOSE #1
+IF a<=0 THEN z$="The GM was deeply puzzled when you offered him a gift of no credits!":GOTO next17
+IF a>credits(j) THEN z$="Your gift to the GM of"+STR$(a)+" credits could not be made, as not enough credits are in your account to fulfill the request.":GOTO next17
+credits(j)=credits(j)-a
+z=INT(RND(1)*2)+1
+IF z=1 THEN z$="The GM was pleased of the"+STR$(a)+" credits you donated to him - Your actions have been noted."
+IF z=2 THEN z$="The"+STR$(a)+" credits that you sacrificed to the GM were greatly appreciated by him, thus making him more aware of your presense."
+next17:
+nomess(j)=nomess(j)+1:mess$(j,nomess(j))=z$
+NEXT x
+next18:
+NEXT j:PRINT "DONE !!"
+FOR x=1 TO 20:shirecash(x)=shirecash(x)+shirecon(x):NEXT x
+PRINT  "All orders have been processed successfully."
+PRINT "[Phew!  All the hard work has been done!]"
+PRINT "Please press a key."
+ordokey:
+a$=INKEY$:IF a$="" THEN GOTO ordokey
+CLS
+printit=1
+PRINT:PRINT "PLEASE SET UP PRINTER READY TO PRINT OUT THE TURNS!"
+pre:                                      
+a$=INKEY$:IF a$="" THEN GOTO pre
+printit2:
+FOR j=1 TO 5
+CLS:PRINT "Press a key to initiate printing for player";j
+nexturn:
+a$=INKEY$:IF a$="" THEN GOTO nexturn
+IF acash(account(j))<0 THEN GOTO nextprintout       ' Negative credit!!
+CLS:acash(account(j))=acash(account(j))-turnprice   ' Adjust account.
+
+' Version 1.04 - Update the accounts......
+' UPDATE (14/1/92 - I think): This account sheet system being utilised
+' takes too long!!  In future account status etc is printed beneath the
+' turn (Below MESSAGE FROM THE GM).
+
+
+anodesc(account(j))=anodesc(account(j))+1:a=anodesc(account(j))
+adate$(account(j),a)=tp$:adesc$(account(j),a)="REALM OF MAGIK TURN - GAME"+STR$(game)
+acost(account(j),a)=-turnprice
+
+OPEN "PAR:" FOR OUTPUT AS #2
+PRINT #2,CHR$(27)"k"CHR$(0);    
+PRINT #2,CHR$(27)"G";          
+PRINT #2,CHR$(27)"W1";         
+PRINT #2,"             ";
+PRINT #2,CHR$(27)"-1";          
+PRINT #2,CHR$(27)"4";
+PRINT #2,CHR$(27)"r"CHR$(1);    
+PRINT #2,"REALM OF MAGIK"
+PRINT #2,CHR$(27)"W0";         
+PRINT #2,CHR$(27)"H";             
+PRINT #2,CHR$(27)"5";
+PRINT #2,CHR$(27)"r"CHR$(0);
+PRINT #2,CHR$(27)"-0";
+PRINT #2,"           Designed and Programmed by Tristan Greaves.  [Version 1.04]"
+PRINT #2,"                 (c) 1991 Tristan Greaves/Vivid Imagination Games"
+PRINT #2,CHR$(27)"-0";            ' Underline OFF
+PRINT #2,CHR$(13)
+PRINT #2,"                         PLAYER:";j;"GAME:";game;" TURN:";turn
+PRINT #2,"       Please refer to the bottom of this turn for details of your account"
+
+PRINT #2," This turn was processed on ";tp$;".  Your orders are due in by ";due$
+PRINT #2,CHR$(13)
+PRINT #2,CHR$(27)"r"CHR$(6);
+PRINT #2,CHR$(27)"W1";:PRINT #2,"        RESULTS FOR ";kingdom$(j):PRINT #2,CHR$(13)
+PRINT #2,CHR$(27)"W0";CHR$(27)"-0";
+PRINT #2,CHR$(27)"r"CHR$(0);
+PRINT #2,PLAYER$(j):PRINT #2,address1$(j):PRINT #2,address2$(j);TAB(40);"Telephone:";telephone$(j):PRINT #2,address3$(j):PRINT #2,address4$(j):PRINT #2,address5$(j)
+PRINT #2,CHR$(27)"W1";          
+PRINT #2,star$
+PRINT #2,CHR$(27)"W0";
+GOTO stagep1
+stagep1:
+PRINT #2,CHR$(27)"W1";:PRINT #2,CHR$(27)"-1";
+PRINT #2,CHR$(27)"r"CHR$(2);
+PRINT #2,"LEADER'S REPORT"
+PRINT #2,CHR$(27)"W0";:PRINT #2,CHR$(27)"-0";
+PRINT #2,CHR$(13):PRINT #2,CHR$(27)"r"CHR$(0);
+IF nomess(j)=0 AND printit=1 THEN PRINT #2,"Due to no orders being issued by you this turn, there is nothing to report.":GOTO stagep2
+IF printit=1 THEN PRINT #2,CHR$(15);
+FOR x=1 TO nomess(j):IF printit=1 THEN PRINT #2,mess$(j,x)
+NEXT x:IF printit=1 THEN PRINT #2,CHR$(18);
+stagep2:
+PRINT star$
+IF printit=1 THEN PRINT #2,CHR$(27)"W1";:PRINT #2,star$:PRINT #2,CHR$(27)"W0";
+a=0:FOR x=1 TO 20:IF shireowner(x)=j THEN a=a+1
+NEXT x
+noisle=a
+a=0:FOR x=1 TO 10:IF notroops(j,x)>0 THEN a=a+1
+NEXT x
+PRINT #2,"You have a total of";noisle;"island(s),";a;"army(s) and";pp(j);"Combat Point(s)."
+PRINT #2,CHR$(27)"W1";:PRINT #2,star$
+PRINT #2,CHR$(27)"r"CHR$(3);
+PRINT #2,CHR$(27)"-1";:PRINT #2,"BATTLE/ALLY REPORTS"
+PRINT #2,CHR$(27)"W0";:PRINT #2,CHR$(27)"-0";
+PRINT #2,CHR$(13):PRINT #2,CHR$(27)"r"CHR$(0);
+IF battle(j)=0 AND printit=1 THEN PRINT #2,"Everything is quiet - No battles or friendly gestures have occured.":GOTO stage2p
+IF printit=1 THEN PRINT #2,CHR$(15);
+FOR x=1 TO battle(j):IF printit=1 THEN PRINT #2,battle$(j,x)
+NEXT x:IF printit=1 THEN PRINT #2,CHR$(18);
+stage2p:
+stagep2a:
+stagep3:
+PRINT #2,CHR$(27)"W1";:PRINT #2,star$
+PRINT #2,CHR$(27)"r"CHR$(5);
+PRINT #2,CHR$(27)"-1";:PRINT #2,"REALM REPORT"
+PRINT #2,CHR$(27)"W0";:PRINT #2,CHR$(27)"-0";
+PRINT #2,CHR$(13):PRINT #2,CHR$(27)"r"CHR$(0);
+FOR x=1 TO 20
+a=0:FOR y=1 TO 10:IF location(j,y)=x THEN a=1
+NEXT y:IF shireowner(x)=j THEN a=1
+IF a=0 THEN GOTO stagep4
+PRINT #2,CHR$(27)"G";:PRINT #2,CHR$(27)"W1";
+PRINT #2,shire$(x);"(";x;")";:PRINT #2,CHR$(27)"W0";:PRINT #2,kingdom$(shireowner(x))
+PRINT #2,CHR$(27)"H";
+PRINT #2,"FORTIFICATION LEVEL:";shiredef(x);"- ECONOMY:";shirecon(x);"- CASH:";shirecash(x)
+PRINT #2,"SEA LANES:";con1(x);" ";con2(x);" ";con3(x)
+PRINT #2,CHR$(15);
+PRINT #2,"Your Armies Present: ";
+FOR y=1 TO 10
+IF location(j,y)=x AND printit=1 AND notroops(j,y)>0 THEN el=1:PRINT #2,"Number";y;"  ";
+NEXT y:IF printit=1 THEN IF el=0 THEN PRINT #2,"None."
+IF printit=1 AND el=1 THEN PRINT #2,CHR$(13):el=0
+PRINT #2,"Enemy Armies Present: ";
+FOR y=1 TO 5:IF y=j THEN GOTO eapn
+FOR yy=1 TO 10
+IF location(y,yy)=x AND notroops(y,yy)>0 THEN el=1
+IF printit=1 AND location(y,yy)=x AND notroops(y,yy)>0 THEN PRINT #2,"<PLAYER";y;" ARMY";yy;">  ";
+NEXT yy
+eapn:
+NEXT y
+IF printit=1 THEN IF el=0 THEN PRINT #2,"None."
+IF printit=1 THEN IF el=1 THEN PRINT #2,CHR$(13):el=0
+IF printit=1 THEN PRINT #2,CHR$(18);
+IF printit=1 THEN PRINT #2,CHR$(13)
+stagep4:
+NEXT x
+PRINT #2,CHR$(27)"W1";:PRINT #2,star$
+PRINT #2,CHR$(27)"r"CHR$(6);
+PRINT #2,CHR$(27)"-1";:PRINT #2,"ARMY REPORTS"
+PRINT #2,CHR$(27)"W0";:PRINT #2,CHR$(27)"-0";
+PRINT #2,CHR$(27)"r"CHR$(0);
+FOR x=1 TO 10
+IF notroops(j,x)=0 THEN GOTO stagep5
+IF printit=1 THEN PRINT #2,"Army";x;"is located at ";shire$(location(j,x));"(";location(j,x);")"
+IF notroops(j,x)=-1 AND printit=1 THEN PRINT #2,"*** ARMY WAS WIPED OUT ***":PRINT #2,CHR$(13):GOTO stagep5
+IF printit=1 THEN PRINT #2,"TROOPS:";notroops(j,x);" - SKILL:";skill(j,x);" - CASH:";troopcash(j,x);" - SECRUITY:";armysec(j,x):PRINT #2,CHR$(13)
+stagep5:
+NEXT x
+PRINT #2,CHR$(27)"W1";:PRINT #2,star$
+PRINT #2,CHR$(27)"r"CHR$(2);
+PRINT #2,CHR$(27)"-1";:PRINT #2,"PLAYER MESSAGES"
+PRINT #2,CHR$(27)"W0";:PRINT #2,CHR$(27)"-0";
+PRINT #2,CHR$(27)"r"CHR$(0);
+IF nopm(j)=0 AND printit=1 THEN PRINT #2,"None of the other races felt obliged to make contact with you this turn.":GOTO stagep55
+IF printit=1 THEN PRINT #2,CHR$(15)
+FOR x=1 TO nopm(j):PRINT #2,pm$(j,x):NEXT x
+IF printit=1 THEN PRINT #2,CHR$(18)
+stagep55:
+PRINT #2,CHR$(27)"W1";:PRINT #2,star$
+PRINT #2,CHR$(27)"r"CHR$(1);
+PRINT #2,CHR$(27)"-1";:PRINT #2,"STATE OF AFFAIRS"
+PRINT #2,CHR$(27)"W0";:PRINT #2,CHR$(27)"-0";
+PRINT #2,CHR$(27)"r"CHR$(0);
+FOR x=1 TO 5
+a(x)=0:FOR y=1 TO 20:IF shireowner(y)=x THEN a(x)=a(x)+1
+NEXT y:NEXT x
+FOR x=1 TO 5
+IF printit=1 THEN PRINT #2,TAB(1);x;TAB(10);kingdom$(x);TAB(40);a(x);"island(s). ";pp(x);"Combat Point(s)."
+NEXT x
+IF printit=1 THEN PRINT #2,20-a(1)-a(2)-a(3)-a(4)-a(5);"islands still uncontrolled."
+IF printit=1 THEN PRINT #2,CHR$(27)"W1";:PRINT #2,star$
+IF printit=1 THEN PRINT #2,CHR$(27)"r"CHR$(2);
+IF printit=1 THEN PRINT #2,CHR$(27)"-1";:PRINT #2,"MESSAGE FROM THE GAMESMASTER"
+IF printit=1 THEN PRINT #2,CHR$(27)"W0";:PRINT #2,CHR$(27)"-0";
+IF printit=1 THEN PRINT #2,CHR$(27)"r"CHR$(0);
+FOR x=1 TO gm:PRINT #2,gm$(x):NEXT x
+PRINT star$
+IF printit=1 THEN PRINT #2,CHR$(27)"W1";:PRINT #2,star$
+IF printit=1 THEN PRINT #2,CHR$(27)"W0";
+
+accountstatussect:
+PRINT #2,CHR$(27)"W1";
+PRINT #2,CHR$(27)"r"CHR$(1);
+PRINT #2,CHR$(27)"-1";:PRINT #2,"ACCOUNT STATUS"
+PRINT #2,CHR$(27)"W0";:PRINT #2,CHR$(27)"-0";
+PRINT #2,CHR$(27)"r"CHR$(0);
+PRINT #2,"Cost of this turn:                 ";STR$(turnprice)
+PRINT #2,"Account balance after processing:  ";STR$(acash(account(j)))
+PRINT #2," "
+IF acash(account(j))>0 THEN GOTO assfin
+IF acash(account(j))=0 THEN PRINT #2,"NOTICE: Your account is empty.  Please supply more funds!":GOTO assfin
+IF acash(account(j))<0 THEN PRINT #2,"WARNING: Your account is in the red.  Please supply more funds!":GOTO assfin
+
+assfin:
+PRINT #2,CHR$(27)"W1";:PRINT #2,star$
+PRINT #2,CHR$(27)"W0";:CLOSE #2
+
+nextprintout:
+NEXT j
+CLS
+PRINT "All turns processed!  Before saving check for errors!!!"
+PRINT "Press [RETURN] to save information...."
+
+getsavekey:
+a$=INKEY$:IF a$<>CHR$(13) THEN GOTO getsavekey
+
+PRINT "Saving new information........."
+f$="ROM:Data/"+STR$(game)
+OPEN f$ FOR OUTPUT AS #1
+FOR j=1 TO 5
+WRITE #1,pp(j),PLAYER$(j),address1$(j),address2$(j),address3$(j),address4$(j),address5$(j),telephone$(j),kingdom$(j),account(j)
+FOR x=1 TO 10
+WRITE #1,notroops(j,x),skill(j,x),location(j,x),troopcash(j,x),armysec(j,x):NEXT x:NEXT j
+FOR j=1 TO 20
+WRITE #1,shire$(j),shirecon(j),shiredef(j),shirecash(j),shireowner(j),con1(j),con2(j),con3(j)
+NEXT j:WRITE #1,turn:CLOSE #1
+
+PRINT "Updating accounts........."
+
+f$="ROM:Data/ACCOUNTS"
+OPEN f$ FOR OUTPUT AS #1
+WRITE #1,noacc:FOR j=1 TO noacc:WRITE #1,aowner$(j),acash(j),anodesc(j)
+FOR x=1 TO anodesc(j):WRITE #1,adate$(j,x),adesc$(j,x),acost(j,x):NEXT x
+NEXT j:CLOSE #1
+
+PRINT "All Done!!":END

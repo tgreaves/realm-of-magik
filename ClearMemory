@@ -1,0 +1,10 @@
+; Realm Of Magik Close-Down Script File
+; For Version 1.2 (Data stored in ram)
+; Run from workbench using ICONX or EXECUTE from the CLI.
+
+:c/echo "Realm Of Magik v1.2 - (c) 1991 Tristan Greaves"
+:c/echo "----------------------------------------------*N"
+:c/echo "Please Wait...Clearing RAM"
+:c/delete ram:Data/#?
+:c/delete ram:Data
+
